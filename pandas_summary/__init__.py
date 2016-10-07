@@ -42,7 +42,10 @@ class DataFrameSummary(object):
             error_keys = [k for k in column if not self._clean_column(k)]
             if len(error_keys) > 0:
                 raise KeyError(', '.join(error_keys))
-            return self.df[list(column)].values
+            if self._is_all_numeric(column):
+                return self._get_multicolumn_summary(column)
+            else:
+                return self.df[list(column)].values
 
         if isinstance(column, pd.Index):
             error_keys = [k for k in column.values if not self._clean_column(k)]
@@ -271,3 +274,20 @@ class DataFrameSummary(object):
 
         columns_included = columns_included.difference(columns_excluded)
         return columns_included.intersection(df.columns)
+
+    def _get_list_of_type(self, ps_type):
+        mask = self.columns_stats.loc['types'] == ps_type
+        select = self.columns_stats.loc["types", :][mask]
+        return select.index.tolist()
+
+    def _is_all_numeric(self, columns):
+        numeric = self._get_list_of_type(self.TYPE_NUMERIC)
+        return set(columns).issubset(numeric)
+
+    def _get_multicolumn_summary(self, columns):
+        collector = list()
+        for column in columns:
+            collector.append(self[column])
+
+        return pd.concat(collector, axis=1)
+
