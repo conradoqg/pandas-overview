@@ -276,15 +276,42 @@ class DataFrameSummary(object):
         return columns_included.intersection(df.columns)
 
     def _get_list_of_type(self, ps_type):
+        """
+        new method added by Alfonso R. Reyes.
+        Get a list of the columns of the specified type
+        :param ps_type: str
+                the type of the column which has to be any of these:
+                TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE, TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE
+        :return: list
+                a list of the columns of the type specified in ps_type
+        """
         mask = self.columns_stats.loc['types'] == ps_type
         select = self.columns_stats.loc["types", :][mask]
         return select.index.tolist()
 
     def _is_all_numeric(self, columns):
+        """
+        new method added by Alfonso R. Reyes.
+        Ask if all the columns provided are of numeric type.
+        :param columns: list
+                a list of columns that we want to ask if they are numeric
+        :return: bool
+                True if the columns provided are all numeric
+        """
         numeric = self._get_list_of_type(self.TYPE_NUMERIC)
         return set(columns).issubset(numeric)
 
     def _get_multicolumn_summary(self, columns):
+        """
+        new method added by Alfonso R. Reyes.
+        creates a multicolumn numeric summary if all columns provided are of numeric type.
+        Iterates through the columns provided and concatenates each of the resulting series.
+
+        :param columns: list
+                a list of columns. They must be of TYPE.NUMERIC. Types are checked with _is_all_numeric()
+        :return: dataframe
+                a concatenation of statical results returned by dfs[column]
+        """
         collector = list()
         for column in columns:
             collector.append(self[column])
