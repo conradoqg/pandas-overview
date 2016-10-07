@@ -26,15 +26,19 @@ class DataFrameSummary(object):
         self.length = len(df)
         self.columns_stats = self._get_stats()
         self.corr = df.corr()
+        print("inside pandas-summary-oct-07")
 
     def __getitem__(self, column):
         if isinstance(column, str) and self._clean_column(column):
+            #: a column specified
             return self._get_column_summary(column)
 
         if isinstance(column, int) and column < self.df.shape[1]:
+            #: a column number is specified
             return self._get_column_summary(self.df.columns[column])
 
         if isinstance(column, (tuple, list)):
+            #: a list or a tuple is specified but no column summary is provided but values
             error_keys = [k for k in column if not self._clean_column(k)]
             if len(error_keys) > 0:
                 raise KeyError(', '.join(error_keys))
@@ -102,7 +106,7 @@ class DataFrameSummary(object):
         return pd.concat([count, perc], axis=1)
 
     def _get_columns_info(self, stats):
-        column_info = {}
+        column_info = dict()
         column_info[self.TYPE_CONSTANT] = stats['uniques'][stats['uniques'] == 1].index
         column_info[self.TYPE_BOOL] = stats['uniques'][stats['uniques'] == 2].index
         rest_columns = self.get_columns(self.df,
@@ -186,7 +190,7 @@ class DataFrameSummary(object):
         deviating_of_median, deviating_of_median_perc = self._get_median_absolute_deviation(series)
         stats['deviating_of_median'] = deviating_of_median
         stats['deviating_of_median_perc'] = deviating_of_median_perc
-        stats['top_correlations'] = self._get_top_correlations(column)
+        # stats['top_correlations'] = self._get_top_correlations(column)
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_date_summary(self, column):
@@ -243,7 +247,7 @@ class DataFrameSummary(object):
         :param usage: should be a value from [ALL, INCLUDE, EXCLUDE].
                             this value only makes sense if attr `columns` is also set.
                             otherwise, should be used with default value ALL.
-        :param columns: * if `usage` is all, this value is not used.
+        :param columns: * if `usage` is all or ALL, this value is not used.
                         * if `usage` is INCLUDE, the `df` is restricted to the intersection
                           between `columns` and the `df.columns`
                         * if usage is EXCLUDE, returns the `df.columns` excluding these `columns`
