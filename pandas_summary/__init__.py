@@ -26,7 +26,6 @@ class DataFrameSummary(object):
         self.length = len(df)
         self.columns_stats = self._get_stats()
         self.corr = df.corr()
-        print("inside pandas-summary")
 
     def __getitem__(self, column):
         if isinstance(column, str) and self._clean_column(column):
