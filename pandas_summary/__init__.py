@@ -191,6 +191,7 @@ class DataFrameSummary(object):
         stats['deviating_of_median'] = deviating_of_median
         stats['deviating_of_median_perc'] = deviating_of_median_perc
         # stats['top_correlations'] = self._get_top_correlations(column)
+        # todo: move line above to correlation report
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_date_summary(self, column):
