@@ -62,3 +62,10 @@ target/
 .project
 .settings/
 .idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Git
+..gitignore.un~
+.gitignore~
