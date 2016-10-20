@@ -21,12 +21,14 @@ class DataFrameSummary(object):
     TYPE_CONSTANT = 'constant'
     TYPE_UNIQUE = 'unique'
 
+    types = [TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE, TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE]
+
     def __init__(self, df):
         self.df = df
         self.length = len(df)
         self.columns_stats = self._get_stats()
         self.corr = df.corr()
-        print("inside pandas-summary-oct-07")
+        print("inside pandas-summary-oct-20_2:43pm")
 
     def __getitem__(self, column):
         if isinstance(column, str) and self._clean_column(column):
@@ -42,7 +44,8 @@ class DataFrameSummary(object):
             error_keys = [k for k in column if not self._clean_column(k)]
             if len(error_keys) > 0:
                 raise KeyError(', '.join(error_keys))
-            if self._is_all_numeric(column):
+            # if self._is_all_numeric(column):
+            if self._is_type_the_same(column):
                 return self._get_multicolumn_summary(column)
             else:
                 return self.df[list(column)].values
@@ -67,6 +70,16 @@ class DataFrameSummary(object):
 
     def summary(self):
         return pd.concat([self.df.describe(), self.columns_stats])[self.df.columns]
+
+    def get_numeric_summary(self):
+        """
+        Generates a dataframe with the summary of only numeric columns
+        :return: pd.DataFrame
+                 a dataframe of numeric columns
+        """
+        the_type = "numeric"
+        columns = self._get_list_of_type(the_type)
+        return self[columns]
 
     @staticmethod
     def _number_format(x):
@@ -199,16 +212,18 @@ class DataFrameSummary(object):
 
     def _get_date_summary(self, column):
         series = self.df[column]
-        stats = {'min': series.min(), 'max': series.max()}
+        stats = {'min': series.min(), 'max': series.max(), 'freq': pd.infer_freq(series)}
         stats['range'] = stats['max'] - stats['min']
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_categorical_summary(self, column):
         series = self.df[column]
+        sets = set(series)
         # Only run if at least 1 non-missing value
         value_counts = series.value_counts()
         stats = {
             'top': '{}: {}'.format(value_counts.index[0], value_counts.iloc[0]),
+            'cats': sets
         }
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
@@ -293,6 +308,7 @@ class DataFrameSummary(object):
         """
         new method added by Alfonso R. Reyes.
         Ask if all the columns provided are of numeric type.
+        Validation for "columns" type is performed at the caller.
         :param columns: list
                 a list of columns that we want to ask if they are numeric
         :return: bool
@@ -300,6 +316,15 @@ class DataFrameSummary(object):
         """
         numeric = self._get_list_of_type(self.TYPE_NUMERIC)
         return set(columns).issubset(numeric)
+
+    def _is_type_the_same(self, columns):
+        """
+        Find if all columns are of the same type
+        :param columns: list
+        :return: boolean
+        """
+        lot = len(set(self.columns_stats[columns].loc['types'].tolist()))
+        return True if lot == 1 else False
 
     def _get_multicolumn_summary(self, columns):
         """
@@ -317,4 +342,8 @@ class DataFrameSummary(object):
             collector.append(self[column])
 
         return pd.concat(collector, axis=1)
+
+
+
+
 
