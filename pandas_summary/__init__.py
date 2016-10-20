@@ -21,24 +21,34 @@ class DataFrameSummary(object):
     TYPE_CONSTANT = 'constant'
     TYPE_UNIQUE = 'unique'
 
+    types = [TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE, TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE]
+
     def __init__(self, df):
         self.df = df
         self.length = len(df)
         self.columns_stats = self._get_stats()
         self.corr = df.corr()
+        print("inside pandas-summary-oct-20_2:43pm")
 
     def __getitem__(self, column):
         if isinstance(column, str) and self._clean_column(column):
+            #: a column specified
             return self._get_column_summary(column)
 
         if isinstance(column, int) and column < self.df.shape[1]:
+            #: a column number is specified
             return self._get_column_summary(self.df.columns[column])
 
         if isinstance(column, (tuple, list)):
+            #: a list or a tuple is specified but no column summary is provided but values
             error_keys = [k for k in column if not self._clean_column(k)]
             if len(error_keys) > 0:
                 raise KeyError(', '.join(error_keys))
-            return self.df[list(column)].values
+            # if self._is_all_numeric(column):
+            if self._is_type_the_same(column):
+                return self._get_multicolumn_summary(column)
+            else:
+                return self.df[list(column)].values
 
         if isinstance(column, pd.Index):
             error_keys = [k for k in column.values if not self._clean_column(k)]
@@ -60,6 +70,16 @@ class DataFrameSummary(object):
 
     def summary(self):
         return pd.concat([self.df.describe(), self.columns_stats])[self.df.columns]
+
+    def get_numeric_summary(self):
+        """
+        Generates a dataframe with the summary of only numeric columns
+        :return: pd.DataFrame
+                 a dataframe of numeric columns
+        """
+        the_type = "numeric"
+        columns = self._get_list_of_type(the_type)
+        return self[columns]
 
     @staticmethod
     def _number_format(x):
@@ -102,7 +122,7 @@ class DataFrameSummary(object):
         return pd.concat([count, perc], axis=1)
 
     def _get_columns_info(self, stats):
-        column_info = {}
+        column_info = dict()
         column_info[self.TYPE_CONSTANT] = stats['uniques'][stats['uniques'] == 1].index
         column_info[self.TYPE_BOOL] = stats['uniques'][stats['uniques'] == 2].index
         rest_columns = self.get_columns(self.df,
@@ -186,21 +206,24 @@ class DataFrameSummary(object):
         deviating_of_median, deviating_of_median_perc = self._get_median_absolute_deviation(series)
         stats['deviating_of_median'] = deviating_of_median
         stats['deviating_of_median_perc'] = deviating_of_median_perc
-        stats['top_correlations'] = self._get_top_correlations(column)
+        # stats['top_correlations'] = self._get_top_correlations(column)
+        # todo: move line above to correlation report
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_date_summary(self, column):
         series = self.df[column]
-        stats = {'min': series.min(), 'max': series.max()}
+        stats = {'min': series.min(), 'max': series.max(), 'freq': pd.infer_freq(series)}
         stats['range'] = stats['max'] - stats['min']
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_categorical_summary(self, column):
         series = self.df[column]
+        sets = set(series)
         # Only run if at least 1 non-missing value
         value_counts = series.value_counts()
         stats = {
             'top': '{}: {}'.format(value_counts.index[0], value_counts.iloc[0]),
+            'cats': sets
         }
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
@@ -243,7 +266,7 @@ class DataFrameSummary(object):
         :param usage: should be a value from [ALL, INCLUDE, EXCLUDE].
                             this value only makes sense if attr `columns` is also set.
                             otherwise, should be used with default value ALL.
-        :param columns: * if `usage` is all, this value is not used.
+        :param columns: * if `usage` is all or ALL, this value is not used.
                         * if `usage` is INCLUDE, the `df` is restricted to the intersection
                           between `columns` and the `df.columns`
                         * if usage is EXCLUDE, returns the `df.columns` excluding these `columns`
@@ -266,3 +289,61 @@ class DataFrameSummary(object):
 
         columns_included = columns_included.difference(columns_excluded)
         return columns_included.intersection(df.columns)
+
+    def _get_list_of_type(self, ps_type):
+        """
+        new method added by Alfonso R. Reyes.
+        Get a list of the columns of the specified type
+        :param ps_type: str
+                the type of the column which has to be any of these:
+                TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE, TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE
+        :return: list
+                a list of the columns of the type specified in ps_type
+        """
+        mask = self.columns_stats.loc['types'] == ps_type
+        select = self.columns_stats.loc["types", :][mask]
+        return select.index.tolist()
+
+    def _is_all_numeric(self, columns):
+        """
+        new method added by Alfonso R. Reyes.
+        Ask if all the columns provided are of numeric type.
+        Validation for "columns" type is performed at the caller.
+        :param columns: list
+                a list of columns that we want to ask if they are numeric
+        :return: bool
+                True if the columns provided are all numeric
+        """
+        numeric = self._get_list_of_type(self.TYPE_NUMERIC)
+        return set(columns).issubset(numeric)
+
+    def _is_type_the_same(self, columns):
+        """
+        Find if all columns are of the same type
+        :param columns: list
+        :return: boolean
+        """
+        lot = len(set(self.columns_stats[columns].loc['types'].tolist()))
+        return True if lot == 1 else False
+
+    def _get_multicolumn_summary(self, columns):
+        """
+        new method added by Alfonso R. Reyes.
+        creates a multicolumn numeric summary if all columns provided are of numeric type.
+        Iterates through the columns provided and concatenates each of the resulting series.
+
+        :param columns: list
+                a list of columns. They must be of TYPE.NUMERIC. Types are checked with _is_all_numeric()
+        :return: dataframe
+                a concatenation of statical results returned by dfs[column]
+        """
+        collector = list()
+        for column in columns:
+            collector.append(self[column])
+
+        return pd.concat(collector, axis=1)
+
+
+
+
+
