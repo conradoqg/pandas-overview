@@ -7,6 +7,11 @@ import pandas as pd
 
 
 class DataFrameSummaryTest(unittest.TestCase):
+    """
+    Test the new methods added by Alfonso R. Reyes.
+    Dataframe has been expanded to show more columns of the same type.
+    Needed for the summary.
+    """
     def setUp(self):
         self.size = 1000
         missing = [np.nan] * (self.size // 10) + list(range(10)) * ((self.size - self.size // 10) // 10)
@@ -41,7 +46,6 @@ class DataFrameSummaryTest(unittest.TestCase):
             dconstant=['a'] * self.size,
             ddates1=pd.date_range('2010-01-01', periods=self.size, freq='1M'),
             ddates2=pd.date_range('2000-01-01', periods=self.size, freq='1W'),
-
         ))
 
         self.dfs = DataFrameSummary(self.df)
