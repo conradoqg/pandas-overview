@@ -21,6 +21,7 @@ class DataFrameSummary(object):
     TYPE_CONSTANT = 'constant'
     TYPE_UNIQUE = 'unique'
 
+    #: new variable types to use in iterations later
     types = [TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE, TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE]
 
     def __init__(self, df):
@@ -44,9 +45,9 @@ class DataFrameSummary(object):
             error_keys = [k for k in column if not self._clean_column(k)]
             if len(error_keys) > 0:
                 raise KeyError(', '.join(error_keys))
-            # if self._is_all_numeric(column):
+            #: this is new. It helps to improve the descriptive summary when columns are of the same type.
             if self._is_type_the_same(column):
-                return self._get_multicolumn_summary(column)
+                return self._get_multicolumn_summary(column)      #: this is also new.
             else:
                 return self.df[list(column)].values
 
@@ -211,19 +212,31 @@ class DataFrameSummary(object):
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_date_summary(self, column):
+        """
+        Gets a summary for date columns only.
+        :param column:
+        :return:
+        """
         series = self.df[column]
+        #: added "freq" to show periods between dates
         stats = {'min': series.min(), 'max': series.max(), 'freq': pd.infer_freq(series)}
         stats['range'] = stats['max'] - stats['min']
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_categorical_summary(self, column):
+        """
+        Gets a summary for categorical columns only
+        :param column:
+        :return:
+        """
         series = self.df[column]
-        sets = set(series)
+        #: adding "cats" for categories that were found
+        cats = set(series)
         # Only run if at least 1 non-missing value
         value_counts = series.value_counts()
         stats = {
             'top': '{}: {}'.format(value_counts.index[0], value_counts.iloc[0]),
-            'cats': sets
+            'cats': cats
         }
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
@@ -292,8 +305,8 @@ class DataFrameSummary(object):
 
     def _get_list_of_type(self, ps_type):
         """
-        new method added by Alfonso R. Reyes.
-        Get a list of the columns of the specified type
+        New method added by Alfonso R. Reyes.
+        Get a list of the columns of the specified type. Useful for grouping columns/
         :param ps_type: str
                 the type of the column which has to be any of these:
                 TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE, TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE
@@ -306,9 +319,9 @@ class DataFrameSummary(object):
 
     def _is_all_numeric(self, columns):
         """
-        new method added by Alfonso R. Reyes.
+        New method added by Alfonso R. Reyes.
         Ask if all the columns provided are of numeric type.
-        Validation for "columns" type is performed at the caller.
+        Validation for "columns" type is performed at the caller method level.
         :param columns: list
                 a list of columns that we want to ask if they are numeric
         :return: bool
@@ -319,7 +332,8 @@ class DataFrameSummary(object):
 
     def _is_type_the_same(self, columns):
         """
-        Find if all columns are of the same type
+        New method added by Alfonso R. Reyes.
+        Find if all columns are of the same type. If helps for grouping columns of the same type.
         :param columns: list
         :return: boolean
         """
@@ -328,12 +342,11 @@ class DataFrameSummary(object):
 
     def _get_multicolumn_summary(self, columns):
         """
-        new method added by Alfonso R. Reyes.
-        creates a multicolumn numeric summary if all columns provided are of numeric type.
-        Iterates through the columns provided and concatenates each of the resulting series.
-
+        New method added by Alfonso R. Reyes.
+        Create a multicolumn summary if all columns provided are of the same type.
+        Iterates through the columns in the argument and concatenates each of the resulting series.
         :param columns: list
-                a list of columns. They must be of TYPE.NUMERIC. Types are checked with _is_all_numeric()
+                a list of columns. They must be of the same type
         :return: dataframe
                 a concatenation of statical results returned by dfs[column]
         """
