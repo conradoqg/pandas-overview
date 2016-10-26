@@ -29,7 +29,7 @@ class DataFrameSummary(object):
         self.length = len(df)
         self.columns_stats = self._get_stats()
         self.corr = df.corr()
-        print("inside pandas-summary-oct-20_2:43pm")
+        print("inside pandas-summary-oct-26_2:21pm")
 
     def __getitem__(self, column):
         if isinstance(column, str) and self._clean_column(column):
@@ -241,7 +241,13 @@ class DataFrameSummary(object):
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_constant_summary(self, column):
-        return 'This is a constant value: {}'.format(self.df[column][0])
+        series = self.df[column]
+        value_counts = series.value_counts()
+        stats = {
+            'top': '{}: {}'.format(value_counts.index[0], value_counts.iloc[0]),
+        }
+        # return 'This is a constant value: {}'.format(self.df[column][0])
+        return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_bool_summary(self, column):
         series = self.df[column]
