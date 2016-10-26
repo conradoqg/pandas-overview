@@ -11,7 +11,6 @@ from pandas_summary import DataFrameSummary
 
 
 class DataFrameSummaryTest(unittest.TestCase):
-
     def setUp(self):
         self.size = 1000
         missing = [np.nan] * (self.size // 10) + list(range(10)) * ((self.size - self.size // 10) // 10)
@@ -32,7 +31,7 @@ class DataFrameSummaryTest(unittest.TestCase):
                            'b'.format(i) if i % 3 == 0 else
                            'c'.format(i) for i in range(self.size)],
             dnumerics1=range(self.size),
-            dnumerics2=range(self.size,  2 * self.size),
+            dnumerics2=range(self.size, 2 * self.size),
             dnumerics3=list(range(self.size - self.size // 10)) + list(range(-self.size // 10, 0)),
             dmissing=missing,
             dconstant=['a'] * self.size,
@@ -215,25 +214,35 @@ class DataFrameSummaryTest(unittest.TestCase):
         num1 = self.df['dnumerics1']
         dm, dmp = self.dfs._get_deviation_of_mean(num1)
         dam, damp = self.dfs._get_median_absolute_deviation(num1)
-        expected = pd.Series(index=['mean', 'std', 'variance', 'min', 'max', '5%', '25%', '50%',
-                                    '75%', '95%', 'iqr', 'kurtosis', 'skewness', 'sum', 'mad', 'cv',
-                                    'zeros_num', 'zeros_perc', 'deviating_of_mean',
-                                    'deviating_of_mean_perc', 'deviating_of_median',
-                                    'deviating_of_median_perc', 'top_correlations', 'counts',
-                                    'uniques', 'missing', 'missing_perc', 'types'],
+
+        #: new expected variable with `top_correlations` removed
+        expected = pd.Series(index=['mean', 'std', 'variance', 'min', 'max',
+                                    '5%', '25%', '50%',
+                                    '75%', '95%', 'iqr',
+                                    'kurtosis', 'skewness', 'sum', 'mad',
+                                    'cv',
+                                    'zeros_num',
+                                    'zeros_perc',
+                                    'deviating_of_mean', 'deviating_of_mean_perc',
+                                    'deviating_of_median', 'deviating_of_median_perc',
+                                    # 'top_correlations',                               #: removing top_correlations
+                                    'counts', 'uniques', 'missing', 'missing_perc', 'types'],
                              data=[num1.mean(), num1.std(), num1.var(), num1.min(), num1.max(),
                                    num1.quantile(0.05), num1.quantile(0.25), num1.quantile(0.5),
-                                   num1.quantile(0.75), num1.quantile(0.95),
-                                   num1.quantile(0.75) - num1.quantile(0.25),
+                                   num1.quantile(0.75), num1.quantile(0.95), num1.quantile(0.75) - num1.quantile(0.25),
                                    num1.kurt(), num1.skew(), num1.sum(), num1.mad(),
                                    num1.std() / num1.mean() if num1.mean() else np.nan,
                                    self.size - np.count_nonzero(num1),
                                    DataFrameSummary._percent(
-                                       (self.size - np.count_nonzero(num1))/self.size),
-                                   dm, dmp, dam, damp, 'dnumerics2: 100%', self.size, self.size,
-                                   0, '0%', DataFrameSummary.TYPE_NUMERIC],
+                                       (self.size - np.count_nonzero(num1)) / self.size),
+                                   dm, dmp,
+                                   dam, damp,
+                                   # 'dnumerics2: 100%',                                #: removing top_correlations
+                                   self.size, self.size, 0, '0%', DataFrameSummary.TYPE_NUMERIC],
                              name='dnumerics1',
                              dtype=object)
 
-        assert_series_equal(self.dfs['dnumerics1'],
-                            expected)
+        print(self.dfs['dnumerics1'])
+        print(expected)
+        assert_series_equal(self.dfs['dnumerics1'], expected)
+
