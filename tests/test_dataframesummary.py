@@ -200,15 +200,17 @@ class DataFrameSummaryTest(unittest.TestCase):
     def test_dates_summary(self):
         dmin = self.df['ddates'].min()
         dmax = self.df['ddates'].max()
-        expected = pd.Series(index=['max', 'min', 'range',
+        freq = pd.infer_freq(self.df['ddates'])
+        expected = pd.Series(index=['freq', 'max', 'min', 'range',
                                     'counts', 'uniques', 'missing', 'missing_perc', 'types'],
-                             data=[dmax, dmin, dmax - dmin,
+                             data=[freq, dmax, dmin, dmax - dmin,
                                    self.size, self.size, 0, '0%', DataFrameSummary.TYPE_DATE],
                              name='ddates',
                              dtype=object)
 
-        assert_series_equal(self.dfs['ddates'],
-                            expected)
+        assert_series_equal(self.dfs['ddates'], expected)
+        print(self.dfs['ddates'])
+        print(expected)
 
     def test_numerics_summary(self):
         num1 = self.df['dnumerics1']
@@ -245,4 +247,3 @@ class DataFrameSummaryTest(unittest.TestCase):
         print(self.dfs['dnumerics1'])
         print(expected)
         assert_series_equal(self.dfs['dnumerics1'], expected)
-
