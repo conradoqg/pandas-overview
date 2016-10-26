@@ -11,6 +11,7 @@ from pandas_summary import DataFrameSummary
 
 
 class DataFrameSummaryTest(unittest.TestCase):
+    #: fixed some TYPE comparisons on 20161026
     def setUp(self):
         self.size = 1000
         missing = [np.nan] * (self.size // 10) + list(range(10)) * ((self.size - self.size // 10) // 10)
@@ -150,7 +151,14 @@ class DataFrameSummaryTest(unittest.TestCase):
                             expected)
 
     def test_constant_summary(self):
-        self.assertEqual(self.dfs['dconstant'], 'This is a constant value: a')
+        #: fixed on 20161026
+        expected = pd.Series(index=['top', 'counts', 'uniques', 'missing', 'missing_perc', 'types'],
+                             data=['a: 1000', self.size, 1, 0, '0%', DataFrameSummary.TYPE_CONSTANT],
+                             name='dconstant', dtype=object
+                             )
+        print(expected)
+        print(self.dfs['dconstant'])
+        assert_series_equal(self.dfs['dconstant'], expected)
 
     def test_bool1_summary(self):
         count_values = self.df['dbool1'].value_counts()
@@ -166,8 +174,7 @@ class DataFrameSummaryTest(unittest.TestCase):
                              name='dbool1',
                              dtype=object)
 
-        assert_series_equal(self.dfs['dbool1'],
-                            expected)
+        assert_series_equal(self.dfs['dbool1'], expected)
 
     def test_bool2_summary(self):
         count_values = self.df['dbool2'].value_counts()
@@ -183,24 +190,27 @@ class DataFrameSummaryTest(unittest.TestCase):
                              name='dbool2',
                              dtype=object)
 
-        assert_series_equal(self.dfs['dbool2'],
-                            expected)
+        assert_series_equal(self.dfs['dbool2'], expected)
+        print(expected)
 
     def test_categorical_summary(self):
-        expected = pd.Series(index=['top',
-                                    'counts', 'uniques', 'missing', 'missing_perc', 'types'],
-                             data=['a: 500',
+        #: fixed on 20161026
+        expected = pd.Series(index=['cats', 'top', 'counts', 'uniques', 'missing', 'missing_perc', 'types'],
+                             data=[{'a', 'c', 'b'}, 'a: 500',
                                    self.size, 3, 0, '0%', DataFrameSummary.TYPE_CATEGORICAL],
                              name='dcategoricals',
                              dtype=object)
 
-        assert_series_equal(self.dfs['dcategoricals'],
-                            expected)
+        assert_series_equal(self.dfs['dcategoricals'], expected)
+        print(self.dfs['dcategoricals'])
+        print(expected)
 
     def test_dates_summary(self):
+        #: fixed on 20161026
         dmin = self.df['ddates'].min()
         dmax = self.df['ddates'].max()
         freq = pd.infer_freq(self.df['ddates'])
+
         expected = pd.Series(index=['freq', 'max', 'min', 'range',
                                     'counts', 'uniques', 'missing', 'missing_perc', 'types'],
                              data=[freq, dmax, dmin, dmax - dmin,
@@ -213,6 +223,7 @@ class DataFrameSummaryTest(unittest.TestCase):
         print(expected)
 
     def test_numerics_summary(self):
+        #: fixed on 20161026
         num1 = self.df['dnumerics1']
         dm, dmp = self.dfs._get_deviation_of_mean(num1)
         dam, damp = self.dfs._get_median_absolute_deviation(num1)
