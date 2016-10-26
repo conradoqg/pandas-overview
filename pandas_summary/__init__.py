@@ -29,7 +29,7 @@ class DataFrameSummary(object):
         self.length = len(df)
         self.columns_stats = self._get_stats()
         self.corr = df.corr()
-        print("inside pandas-summary-oct-20_2:43pm")
+        print("inside pandas-summary-oct-26_2:21pm")
 
     def __getitem__(self, column):
         if isinstance(column, str) and self._clean_column(column):
