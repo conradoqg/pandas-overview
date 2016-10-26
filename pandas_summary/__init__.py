@@ -36,6 +36,10 @@ class DataFrameSummary(object):
             #: a column specified
             return self._get_column_summary(column)
 
+        #: added for the case when the dataframe was imported from Excel
+        if isinstance(column, unicode) and self._clean_column(column):
+            return self._get_column_summary(column)
+
         if isinstance(column, int) and column < self.df.shape[1]:
             #: a column number is specified
             return self._get_column_summary(self.df.columns[column])
@@ -80,6 +84,7 @@ class DataFrameSummary(object):
         """
         the_type = "numeric"
         columns = self._get_list_of_type(the_type)
+        # columns = [x.encode('ascii') for x in columns]
         return self[columns]
 
     @staticmethod

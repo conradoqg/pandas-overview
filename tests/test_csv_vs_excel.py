@@ -45,5 +45,46 @@ class ExcelVsCSVTest(unittest.TestCase):
         xdf_columns = self.xdf.columns.tolist()
         cdf_columns = self.cdf.columns.tolist()
         for x, c in zip(xdf_columns, cdf_columns):
-            print(type(x), type(c))
+            # print(type(x), type(c))
             self.assertFalse(type(x) == type(c))
+
+    def test_column_excel_is_not_instance_of_str(self):
+        xdf_columns = self.xdf.columns.tolist()
+        for column in xdf_columns:
+            self.assertFalse(isinstance(column, str))
+
+    def test_column_csv_is_instance_of_str(self):
+        cdf_columns = self.cdf.columns.tolist()
+        for column in cdf_columns:
+            self.assertTrue(isinstance(column, str))
+
+    def test_pandas_summary_on_excel_df(self):
+        #: fixme: this returns error
+        xdfs = DataFrameSummary(self.xdf)
+        print(xdfs.get_numeric_summary())
+
+    def test_pandas_summary_on_csv_df(self):
+        #: this works great!
+        cdfs = DataFrameSummary(self.cdf)
+        print(cdfs.get_numeric_summary())
+
+    def test_clean_column_on_excel(self):
+        xdfs = DataFrameSummary(self.xdf)
+        xdf_columns = self.xdf.columns.tolist()
+
+        print(xdfs._clean_column(xdf_columns[0]))
+
+        for x in xdf_columns:
+            # print(xdfs._clean_column(x))
+            self.assertTrue(xdfs._clean_column(x))
+
+    def test_get_list_of_type(self):
+        xdfs = DataFrameSummary(self.xdf)
+        the_type = "numeric"
+        columns = xdfs._get_list_of_type(the_type)
+        print(columns)
+        # xdfs.get_numeric_summary()
+        cols = [x.encode('ascii') for x in columns]
+        print(cols)
+
+
