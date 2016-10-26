@@ -39,6 +39,7 @@ class ExcelVsCSVTest(unittest.TestCase):
     def test_column_names_same_type_false(self):
         """
         Excel import the columns as unicode meanwhile CSV import as str()
+        This test shows that the column name types are not the same
         :return:
         """
         xdf_columns = self.xdf.columns.tolist()
