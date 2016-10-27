@@ -29,11 +29,15 @@ class DataFrameSummary(object):
         self.length = len(df)
         self.columns_stats = self._get_stats()
         self.corr = df.corr()
-        print("inside pandas-summary-oct-26_2:21pm")
+        print("inside pandas-summary-oct-27_09:50am")
 
     def __getitem__(self, column):
         if isinstance(column, str) and self._clean_column(column):
             #: a column specified
+            return self._get_column_summary(column)
+
+        #: added for the case when the dataframe was imported from Excel
+        if isinstance(column, unicode) and self._clean_column(column):
             return self._get_column_summary(column)
 
         if isinstance(column, int) and column < self.df.shape[1]:
@@ -80,6 +84,7 @@ class DataFrameSummary(object):
         """
         the_type = "numeric"
         columns = self._get_list_of_type(the_type)
+        # columns = [x.encode('ascii') for x in columns]
         return self[columns]
 
     @staticmethod
@@ -209,6 +214,7 @@ class DataFrameSummary(object):
         stats['deviating_of_median_perc'] = deviating_of_median_perc
         # stats['top_correlations'] = self._get_top_correlations(column)
         # todo: move line above to correlation report
+        # fixme: we don't want top correlations because it messes up the table format.
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
     def _get_date_summary(self, column):
