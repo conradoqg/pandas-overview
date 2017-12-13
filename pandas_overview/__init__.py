@@ -369,3 +369,35 @@ class DataFrameSummary(object):
             collector.append(self[column])
 
         return pd.concat(collector, axis=1)
+
+    def __repr__(self):
+        from IPython.display import display, Markdown
+        import matplotlib.pyplot as plt
+
+        # Remove column limitation, it's necessary to get a real overview of the data
+        max_columns = pd.get_option('display.max_columns')
+        pd.set_option('display.max_columns', None)
+
+        display(Markdown("## Describe"))        
+        display(self.summary());        
+        display("Shape: " + str(self.df.shape));
+        display(Markdown("## Head"))
+        display(self.df.head())
+        display(Markdown("## Tail"))
+        display(self.df.tail())
+        display(Markdown("## Correlations"))
+        with np.errstate(invalid='ignore'):
+            corr = self.df.corr()
+            #corr.fillna(0, inplace=True)            
+            display(corr.style.background_gradient(cmap=plt.get_cmap('coolwarm'), axis=1).set_properties(**{'max-width': '80px', 'font-size': '10pt'}).set_precision(2))
+        if self._get_list_of_type("numeric"):
+            display(Markdown("## Histogram"))
+            self.df[self._get_list_of_type("numeric")].hist(bins='auto', figsize=(20,15))  
+            plt.show()
+        if self._get_list_of_type("categorical"):
+            display(Markdown("## Categorical value counts"))            
+            self.df[self._get_list_of_type("categorical")].apply(lambda X:display(X.value_counts().to_frame()))
+
+        # Restore column limitation
+        pd.set_option('display.max_columns', max_columns)
+        return ""
