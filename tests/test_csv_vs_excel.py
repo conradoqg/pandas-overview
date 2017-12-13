@@ -7,14 +7,14 @@ import numpy as np
 import pandas as pd
 from pandas.util.testing import assert_series_equal
 
-from pandas_summary import DataFrameSummary
+from pandas_overview import DataFrameSummary
 
 
 class ExcelVsCSVTest(unittest.TestCase):
     #: fixed some TYPE comparisons on 20161026
     def setUp(self):
-        self.xdf = pd.read_excel("../data/gap_glop_60_dataset.xlsx")
-        self.cdf = pd.read_csv("../data/gap_glop_60_dataset.csv")
+        self.xdf = pd.read_excel("data/gap_58_dataset.xlsx")
+        self.cdf = pd.read_csv("data/gap_58_dataset.csv")
         pass
 
     def test_excel_csv_same_shape(self):

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from pandas.util.testing import assert_series_equal
 
-from pandas_summary import DataFrameSummary
+from pandas_overview import DataFrameSummary
 
 
 class DataFrameSummaryTest(unittest.TestCase):
@@ -74,11 +74,13 @@ class DataFrameSummaryTest(unittest.TestCase):
                              name='uniques',
                              dtype='object')
         expected[['dbool1', 'dbool2']] = 2
-        expected[['dcategoricals']] = 3
-        expected[['dconstant']] = 1
-        expected[['dmissing']] = 10
+        expected['dcategoricals'] = 3
+        expected['dconstant'] = 1
+        expected['dmissing'] = 10
+        print(column_stats[self.columns].loc['uniques'])
+        print(expected[self.columns])
         assert_series_equal(column_stats[self.columns].loc['uniques'],
-                            expected[self.columns])
+                            expected[self.columns].astype('object'))
 
         # missing
         expected = pd.Series(index=self.columns,
@@ -87,7 +89,7 @@ class DataFrameSummaryTest(unittest.TestCase):
                              dtype='object')
         expected[['dmissing']] = 100
         assert_series_equal(column_stats[self.columns].loc['missing'],
-                            expected[self.columns])
+                            expected[self.columns].astype('object'))
 
         # missing_perc
         expected = pd.Series(index=self.columns,
@@ -97,7 +99,7 @@ class DataFrameSummaryTest(unittest.TestCase):
 
         expected[['dmissing']] = '10%'
         assert_series_equal(column_stats[self.columns].loc['missing_perc'],
-                            expected[self.columns])
+                            expected[self.columns].astype('object'))
 
         # types
         expected = pd.Series(index=self.columns,
@@ -113,7 +115,7 @@ class DataFrameSummaryTest(unittest.TestCase):
         expected[['dnumerics1', 'dnumerics2',
                   'dnumerics3', 'dmissing']] = DataFrameSummary.TYPE_NUMERIC
         assert_series_equal(column_stats[self.columns].loc['types'],
-                            expected[self.columns])
+                            expected[self.columns].astype('object'))
 
     def test_numer_format_works_as_expected(self):
         float_nums = [(123.123, '123.12'),

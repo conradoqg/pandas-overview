@@ -1,7 +1,7 @@
 from __future__ import division
-from six import string_types
-
 from collections import OrderedDict
+from six import string_types
+import six
 
 import numpy as np
 import pandas as pd
@@ -29,7 +29,6 @@ class DataFrameSummary(object):
         self.length = len(df)
         self.columns_stats = self._get_stats()
         self.corr = df.corr()
-        # print("inside pandas-summary-oct-27_09:50am")
 
     def __getitem__(self, column):
         if isinstance(column, str) and self._clean_column(column):
@@ -37,8 +36,9 @@ class DataFrameSummary(object):
             return self._get_column_summary(column)
 
         #: added for the case when the dataframe was imported from Excel
-        if isinstance(column, unicode) and self._clean_column(column):
-            return self._get_column_summary(column)
+        if six.PY2:
+            if isinstance(column, unicode) and self._clean_column(column):
+                return self._get_column_summary(column)
 
         if isinstance(column, int) and column < self.df.shape[1]:
             #: a column number is specified
@@ -153,7 +153,8 @@ class DataFrameSummary(object):
         :param multiplier:
         :return:
         """
-        capped_series = np.minimum(series, series.mean() + multiplier * series.std())
+        with np.errstate(invalid='ignore'):
+            capped_series = np.minimum(series, series.mean() + multiplier * series.std())
         count = pd.value_counts(series != capped_series)
         count = count[True] if True in count else 0
         perc = self._percent(count / self.length)
@@ -166,7 +167,8 @@ class DataFrameSummary(object):
         :param multiplier:
         :return (array):
         """
-        capped_series = np.minimum(series, series.median() + multiplier * series.mad())
+        with np.errstate(invalid='ignore'):
+            capped_series = np.minimum(series, series.median() + multiplier * series.mad())
         count = pd.value_counts(series != capped_series)
         count = count[True] if True in count else 0
         perc = self._percent(count / self.length)
@@ -367,8 +369,3 @@ class DataFrameSummary(object):
             collector.append(self[column])
 
         return pd.concat(collector, axis=1)
-
-
-
-
-

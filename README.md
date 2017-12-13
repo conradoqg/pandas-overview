@@ -1,5 +1,5 @@
-# pandas_summary
-An extension to [pandas](http://pandas.pydata.org/) dataframes describe function.
+# pandas_overview
+A tool that goes deeper than [pandas](http://pandas.pydata.org/) dataframes describe function.
 
 The module contains `DataFrameSummary` object that extend `describe()` with:
 
@@ -11,11 +11,11 @@ The module contains `DataFrameSummary` object that extend `describe()` with:
     * summary(): extends the `describe()` function with the values with `columns_stats`
  
 
-# Installation
+# Installation (Not published yet)
 The module can be easily installed with pip:
 
-```conslole
-> pip install pandas-summary
+```bash
+> pip install pandas-overview
 ```
 
 This module depends on `numpy` and `pandas`. Optionally you can get also some nice visualisations if you have `matplotlib` installed.
@@ -31,7 +31,7 @@ The module contains one class:
 The `DataFrameSummary` expect a pandas `DataFrame` to summarise.
 
 ```python
-from pandas_summary import DataFrameSummary
+from pandas_overview import DataFrameSummary
 
 dfs = DataFrameSummary(df)
 ```
@@ -105,3 +105,7 @@ Name: A, dtype: object
 # Future development
 
 Summary analysis between columns, i.e. `dfs[[1, 2]]`
+
+# Origins
+
+- This is a forked version of the original [pandas-summary](https://github.com/mouradmourafiq/pandas-summary) plus great additions from [pandas-summary-master](https://github.com/AlfonsoRReyes/pandas-summary-master)

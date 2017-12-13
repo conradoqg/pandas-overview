@@ -1,5 +1,4 @@
-# from ptech.ext.pandas_summary import DataFrameSummary
-from pandas_summary import DataFrameSummary
+from pandas_overview import DataFrameSummary
 import unittest
 from random import shuffle
 import numpy as np

@@ -17,25 +17,28 @@ class PyTest(TestCommand):
         sys.exit(errcode)
 
 
-setup(name='pandas-summary',
-      version='0.0.2',
+setup(name='pandas-overview',
+      version='0.0.1',
       description='An extension to pandas describe function.',
-      maintainer='Mourad Mourafiq',
-      maintainer_email='mouradmourafiq@gmail.com',
-      url='https://github.com/mouradmourafiq/pandas-summary',
+      maintainer='Conrado Quilles Gomes',
+      maintainer_email='conradoqg@gmail.com',
+      url='https://github.com/conradoqg/pandas-overview',
       license='MIT',
       platforms='any',
-      packages=['pandas_summary'],
+      packages=['pandas_overview'],
       keywords=['pandas', 'data analysis', 'machine learning'],
       install_requires=[
           'numpy',
           'pandas',
       ],
       classifiers=[
-        'Programming Language :: Python',
-        'Operating System :: OS Independent',
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering'
+          'Programming Language :: Python',
+          'Operating System :: OS Independent',
+          'Intended Audience :: Science/Research',
+          'Topic :: Scientific/Engineering'
       ],
-      tests_require=['pytest'],
+      tests_require=[
+          'pytest',
+          'xlrd'
+      ],
       cmdclass={'test': PyTest})
