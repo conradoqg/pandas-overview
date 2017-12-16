@@ -69,3 +69,6 @@ target/
 # Git
 ..gitignore.un~
 .gitignore~
+
+# Visual Studio Code
+.vscode

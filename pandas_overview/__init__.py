@@ -22,7 +22,8 @@ class DataFrameSummary(object):
     TYPE_UNIQUE = 'unique'
 
     #: new variable types to use in iterations later
-    types = [TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE, TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE]
+    types = [TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE,
+             TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE]
 
     def __init__(self, df):
         self.df = df
@@ -51,12 +52,14 @@ class DataFrameSummary(object):
                 raise KeyError(', '.join(error_keys))
             #: this is new. It helps to improve the descriptive summary when columns are of the same type.
             if self._is_type_the_same(column):
-                return self._get_multicolumn_summary(column)      #: this is also new.
+                #: this is also new.
+                return self._get_multicolumn_summary(column)
             else:
                 return self.df[list(column)].values
 
         if isinstance(column, pd.Index):
-            error_keys = [k for k in column.values if not self._clean_column(k)]
+            error_keys = [
+                k for k in column.values if not self._clean_column(k)]
             if len(error_keys) > 0:
                 raise KeyError(', '.join(error_keys))
             return self.df[column].values
@@ -136,16 +139,19 @@ class DataFrameSummary(object):
                                         column_info['constant'].union(column_info['bool']))
         column_info[self.TYPE_NUMERIC] = pd.Index([c for c in rest_columns
                                                    if common.is_numeric_dtype(self.df[c])])
-        rest_columns = self.get_columns(self.df[rest_columns], self.EXCLUDE, column_info['numeric'])
+        rest_columns = self.get_columns(
+            self.df[rest_columns], self.EXCLUDE, column_info['numeric'])
         column_info[self.TYPE_DATE] = pd.Index([c for c in rest_columns
                                                 if common.is_datetime64_dtype(self.df[c])])
-        rest_columns = self.get_columns(self.df[rest_columns], self.EXCLUDE, column_info['date'])
+        rest_columns = self.get_columns(
+            self.df[rest_columns], self.EXCLUDE, column_info['date'])
         unique_columns = stats['uniques'][rest_columns] == stats['counts'][rest_columns]
         column_info[self.TYPE_UNIQUE] = stats['uniques'][rest_columns][unique_columns].index
         column_info[self.TYPE_CATEGORICAL] = stats['uniques'][rest_columns][~unique_columns].index
         return column_info
 
     """ Column summaries """
+
     def _get_deviation_of_mean(self, series, multiplier=3):
         """
         Returns count of values deviating of the mean, i.e. larger than `multiplier` * `std`.
@@ -154,7 +160,8 @@ class DataFrameSummary(object):
         :return:
         """
         with np.errstate(invalid='ignore'):
-            capped_series = np.minimum(series, series.mean() + multiplier * series.std())
+            capped_series = np.minimum(
+                series, series.mean() + multiplier * series.std())
         count = pd.value_counts(series != capped_series)
         count = count[True] if True in count else 0
         perc = self._percent(count / self.length)
@@ -168,7 +175,8 @@ class DataFrameSummary(object):
         :return (array):
         """
         with np.errstate(invalid='ignore'):
-            capped_series = np.minimum(series, series.median() + multiplier * series.mad())
+            capped_series = np.minimum(
+                series, series.median() + multiplier * series.mad())
         count = pd.value_counts(series != capped_series)
         count = count[True] if True in count else 0
         perc = self._percent(count / self.length)
@@ -208,10 +216,12 @@ class DataFrameSummary(object):
         stats['cv'] = stats['std'] / stats['mean'] if stats['mean'] else np.nan
         stats['zeros_num'] = self.length - np.count_nonzero(series)
         stats['zeros_perc'] = self._percent(stats['zeros_num'] / self.length)
-        deviation_of_mean, deviation_of_mean_perc = self._get_deviation_of_mean(series)
+        deviation_of_mean, deviation_of_mean_perc = self._get_deviation_of_mean(
+            series)
         stats['deviating_of_mean'] = deviation_of_mean
         stats['deviating_of_mean_perc'] = deviation_of_mean_perc
-        deviating_of_median, deviating_of_median_perc = self._get_median_absolute_deviation(series)
+        deviating_of_median, deviating_of_median_perc = self._get_median_absolute_deviation(
+            series)
         stats['deviating_of_median'] = deviating_of_median
         stats['deviating_of_median_perc'] = deviating_of_median_perc
         # stats['top_correlations'] = self._get_top_correlations(column)
@@ -227,7 +237,8 @@ class DataFrameSummary(object):
         """
         series = self.df[column]
         #: added "freq" to show periods between dates
-        stats = {'min': series.min(), 'max': series.max(), 'freq': pd.infer_freq(series)}
+        stats = {'min': series.min(), 'max': series.max(),
+                 'freq': pd.infer_freq(series)}
         stats['range'] = stats['max'] - stats['min']
         return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
 
@@ -305,7 +316,8 @@ class DataFrameSummary(object):
 
         if usage == self.INCLUDE:
             try:
-                columns_included = columns_included.intersection(pd.Index(columns))
+                columns_included = columns_included.intersection(
+                    pd.Index(columns))
             except TypeError:
                 pass
         elif usage == self.EXCLUDE:
@@ -370,34 +382,93 @@ class DataFrameSummary(object):
 
         return pd.concat(collector, axis=1)
 
-    def __repr__(self):
-        from IPython.display import display, Markdown
+
+import math
+
+
+class DataFrameOverview:
+    def overview(dfs, first_level = 1):
+        from IPython.display import display, HTML, Markdown
         import matplotlib.pyplot as plt
+
+        markdown_level = "#" * first_level
 
         # Remove column limitation, it's necessary to get a real overview of the data
         max_columns = pd.get_option('display.max_columns')
         pd.set_option('display.max_columns', None)
 
-        display(Markdown("## Describe"))        
-        display(self.summary());        
-        display("Shape: " + str(self.df.shape));
-        display(Markdown("## Head"))
-        display(self.df.head())
-        display(Markdown("## Tail"))
-        display(self.df.tail())
-        display(Markdown("## Correlations"))
+        display(Markdown(markdown_level +" Data overview"))
+        display(Markdown(markdown_level + "# Summary"))
+        display(dfs.summary())
+        display(Markdown("Data shape: " + str(dfs.df.shape)))
+        display(Markdown(markdown_level + "## Columns"))
+        for column_type in DataFrameSummary.types:
+            column_list = dfs._get_list_of_type(column_type)
+            if column_list:
+                display(Markdown("**"+column_type+":** " + str(column_list)))
+            else:
+                display(Markdown("**"+column_type+":** None"))
+        
+        display(Markdown(markdown_level + "# Head"))
+        display(dfs.df.head())
+        display(Markdown(markdown_level + "# Tail"))
+        display(dfs.df.tail())
+        display(Markdown(markdown_level + "# Correlations"))
         with np.errstate(invalid='ignore'):
-            corr = self.df.corr()
-            #corr.fillna(0, inplace=True)            
-            display(corr.style.background_gradient(cmap=plt.get_cmap('coolwarm'), axis=1).set_properties(**{'max-width': '80px', 'font-size': '10pt'}).set_precision(2))
-        if self._get_list_of_type("numeric"):
-            display(Markdown("## Histogram"))
-            self.df[self._get_list_of_type("numeric")].hist(bins='auto', figsize=(20,15))  
+            corr = dfs.df.corr()
+            display(corr.style.background_gradient(cmap=plt.get_cmap('coolwarm'), axis=1).set_properties(
+                **{'max-width': '80px', 'font-size': '10pt'}).set_precision(2))
+        if dfs._get_list_of_type("numeric"):
+            display(Markdown(markdown_level + "# Histogram for numeric columns"))
+            dfs.df[dfs._get_list_of_type("numeric")].hist(
+                bins='auto', figsize=(20, 15))
             plt.show()
-        if self._get_list_of_type("categorical"):
-            display(Markdown("## Categorical value counts"))            
-            self.df[self._get_list_of_type("categorical")].apply(lambda X:display(X.value_counts().to_frame()))
+        if dfs._get_list_of_type("categorical"):
+            max_rows = 20
+            display(Markdown(markdown_level + "# Value counts for categorical columns"))
+            display(DataFrameOverview.get_summary_value_counts(dfs, max_rows))
+            display(HTML("<small>Limited to " +  str(max_rows) + " rows</small>"))
+        if dfs._get_list_of_type("unique") or dfs._get_list_of_type("date"):
+            display(Markdown(markdown_level + "# Range for unique and date columns"))            
+            display(DataFrameOverview.get_range(dfs))
+        if dfs._get_list_of_type("constant"):
+            display(Markdown(markdown_level + "# Values for constant columns"))            
+            display(DataFrameOverview.get_constant(dfs))
 
         # Restore column limitation
         pd.set_option('display.max_columns', max_columns)
-        return ""
+
+    @staticmethod
+    def get_summary_value_counts(dfs, max_rows=20):
+        frames = []
+        dfs.df[dfs._get_list_of_type("categorical")].apply(
+            lambda X: frames.append(DataFrameOverview.limit_dataframe_rows(X, 20)))
+        categorical_counts = pd.concat(frames, axis=1)
+        categorical_counts.drop('index', axis=1, inplace=True)
+        return categorical_counts
+
+    @staticmethod
+    def limit_dataframe_rows(filtered_dataframe, max_rows=20):
+        df = filtered_dataframe.value_counts().to_frame()
+        number_of_columns = math.floor(max_rows / 2)
+        df.reset_index(level=0, inplace=True)
+        df.rename(columns={
+                  'index': df.columns[1], df.columns[1]: df.columns[1] + ' Count'}, inplace=True)
+        head_rows = df[:number_of_columns]
+        tail_rows = df[-number_of_columns:]
+        value_count_dataframe = pd.concat(
+            [head_rows, pd.DataFrame([['...', '...']], columns=df.columns), tail_rows])
+        value_count_dataframe.reset_index(level=0, inplace=True)
+        return value_count_dataframe
+
+    @staticmethod
+    def get_range(dfs):
+        frames = []
+        dfs.df[dfs._get_list_of_type("unique") + dfs._get_list_of_type("date")].apply(lambda X: frames.append([X.name, X.min(), X.max()]))    
+        return pd.DataFrame(frames, columns=['Column', 'Max', 'Min'])
+
+    @staticmethod
+    def get_constant(dfs):
+        frames = []
+        dfs.df[dfs._get_list_of_type("constant")].apply(lambda X: frames.append([X.name, X.min()]))    
+        return pd.DataFrame(frames, columns=['Column', 'Value'])
