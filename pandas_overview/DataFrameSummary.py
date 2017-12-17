@@ -24,10 +24,10 @@ class DataFrameSummary(object):
              TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE]
 
     def __init__(self, df):
-        self.df = df
-        self.length = len(df)
-        self.columns_stats = self._get_stats()
-        self.corr = df.corr()
+        self._df = df
+        self._length = len(df)
+        self._columns_stats = self._get_stats()
+        self._corr = df.corr()
 
     def __getitem__(self, column):
         if isinstance(column, str) and self._clean_column(column):
@@ -39,9 +39,9 @@ class DataFrameSummary(object):
             if isinstance(column, unicode) and self._clean_column(column):
                 return self._get_column_summary(column)
 
-        if isinstance(column, int) and column < self.df.shape[1]:
+        if isinstance(column, int) and column < self._df.shape[1]:
             #: a column number is specified
-            return self._get_column_summary(self.df.columns[column])
+            return self._get_column_summary(self._df.columns[column])
 
         if isinstance(column, (tuple, list)):
             #: a list or a tuple is specified but no column summary is provided but values
@@ -53,40 +53,63 @@ class DataFrameSummary(object):
                 #: this is also new.
                 return self._get_multicolumn_summary(column)
             else:
-                return self.df[list(column)].values
+                return self._df[list(column)].values
 
         if isinstance(column, pd.Index):
             error_keys = [
                 k for k in column.values if not self._clean_column(k)]
             if len(error_keys) > 0:
                 raise KeyError(', '.join(error_keys))
-            return self.df[column].values
+            return self._df[column].values
 
         if isinstance(column, np.ndarray):
             error_keys = [k for k in column if not self._clean_column(k)]
             if len(error_keys) > 0:
                 raise KeyError(', '.join(error_keys))
-            return self.df[column].values
+            return self._df[column].values
 
         raise KeyError(column)
 
     @property
     def columns_types(self):
-        return pd.value_counts(self.columns_stats.loc['types'])
+        return pd.value_counts(self._columns_stats.loc['types'])
 
-    def summary(self):
-        return pd.concat([self.df.describe(), self.columns_stats])[self.df.columns]
+    def summary(self, columns = None):
+        selected_columns = columns if columns is not None else self._df.columns
+        return pd.concat([self._df.describe(), self._columns_stats])[selected_columns]
 
-    def get_numeric_summary(self):
-        """
-        Generates a dataframe with the summary of only numeric columns
-        :return: pd.DataFrame
-                 a dataframe of numeric columns
-        """
-        the_type = "numeric"
-        columns = self._get_list_of_type(the_type)
-        # columns = [x.encode('ascii') for x in columns]
+    def column_summary(self, column):
+        column_type = self._columns_stats.loc['types'][column]
+        if column_type == self.TYPE_NUMERIC:
+            return self._get_numeric_summary(column)
+        if column_type == self.TYPE_CATEGORICAL:
+            return self._get_categorical_summary(column)
+        if column_type == self.TYPE_BOOL:
+            return self._get_bool_summary(column)
+        if column_type == self.TYPE_UNIQUE:
+            return self._get_unique_summary(column)
+        if column_type == self.TYPE_DATE:
+            return self._get_date_summary(column)
+        if column_type == self.TYPE_CONSTANT:
+            return self._get_constant_summary(column)
+
+    def type_summary(self, type):        
+        columns = self.columns_of_type(type)        
         return self[columns]
+
+    def columns_of_type(self, type):
+        """
+        New method added by Alfonso R. Reyes.
+        Get a list of the columns of the specified type. Useful for grouping columns/
+        :param type: str
+                the type of the column which has to be any of these:
+                TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE, TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE
+        :return: list
+                a list of the columns of the type specified in type
+        """
+        mask = self._columns_stats.loc['types'] == type
+        select = self._columns_stats.loc["types", :][mask]
+        return select.index.tolist()
 
     @staticmethod
     def _number_format(x):
@@ -102,10 +125,10 @@ class DataFrameSummary(object):
     def _clean_column(self, column):
         if not isinstance(column, (int, string_types)):
             raise ValueError('{} is not a valid column'.format(column))
-        return column in self.df.columns
+        return column in self._df.columns
 
     def _get_stats(self):
-        counts = self.df.count()
+        counts = self._df.count()
         counts.name = 'counts'
         uniques = self._get_uniques()
         missing = self._get_missing(counts)
@@ -116,15 +139,15 @@ class DataFrameSummary(object):
         columns_info = self._get_columns_info(stats)
         for ctype, columns in columns_info.items():
             stats.ix[columns, 'types'] = ctype
-        return stats.transpose()[self.df.columns]
+        return stats.transpose()[self._df.columns]
 
     def _get_uniques(self):
-        return pd.Series(dict((c, self.df[c].nunique()) for c in self.df.columns), name='uniques')
+        return pd.Series(dict((c, self._df[c].nunique()) for c in self._df.columns), name='uniques')
 
     def _get_missing(self, counts):
-        count = self.length - counts
+        count = self._length - counts
         count.name = 'missing'
-        perc = (count / self.length).apply(self._percent)
+        perc = (count / self._length).apply(self._percent)
         perc.name = 'missing_perc'
         return pd.concat([count, perc], axis=1)
 
@@ -132,17 +155,17 @@ class DataFrameSummary(object):
         column_info = dict()
         column_info[self.TYPE_CONSTANT] = stats['uniques'][stats['uniques'] == 1].index
         column_info[self.TYPE_BOOL] = stats['uniques'][stats['uniques'] == 2].index
-        rest_columns = self.get_columns(self.df,
+        rest_columns = self._get_columns(self._df,
                                         self.EXCLUDE,
                                         column_info['constant'].union(column_info['bool']))
         column_info[self.TYPE_NUMERIC] = pd.Index([c for c in rest_columns
-                                                   if common.is_numeric_dtype(self.df[c])])
-        rest_columns = self.get_columns(
-            self.df[rest_columns], self.EXCLUDE, column_info['numeric'])
+                                                   if common.is_numeric_dtype(self._df[c])])
+        rest_columns = self._get_columns(
+            self._df[rest_columns], self.EXCLUDE, column_info['numeric'])
         column_info[self.TYPE_DATE] = pd.Index([c for c in rest_columns
-                                                if common.is_datetime64_dtype(self.df[c])])
-        rest_columns = self.get_columns(
-            self.df[rest_columns], self.EXCLUDE, column_info['date'])
+                                                if common.is_datetime64_dtype(self._df[c])])
+        rest_columns = self._get_columns(
+            self._df[rest_columns], self.EXCLUDE, column_info['date'])
         unique_columns = stats['uniques'][rest_columns] == stats['counts'][rest_columns]
         column_info[self.TYPE_UNIQUE] = stats['uniques'][rest_columns][unique_columns].index
         column_info[self.TYPE_CATEGORICAL] = stats['uniques'][rest_columns][~unique_columns].index
@@ -162,7 +185,7 @@ class DataFrameSummary(object):
                 series, series.mean() + multiplier * series.std())
         count = pd.value_counts(series != capped_series)
         count = count[True] if True in count else 0
-        perc = self._percent(count / self.length)
+        perc = self._percent(count / self._length)
         return count, perc
 
     def _get_median_absolute_deviation(self, series, multiplier=3):
@@ -177,18 +200,18 @@ class DataFrameSummary(object):
                 series, series.median() + multiplier * series.mad())
         count = pd.value_counts(series != capped_series)
         count = count[True] if True in count else 0
-        perc = self._percent(count / self.length)
+        perc = self._percent(count / self._length)
         return count, perc
 
     def _get_top_correlations(self, column, threshold=0.65, top=3):
-        column_corr = np.fabs(self.corr[column].drop(column)).sort_values(ascending=False,
+        column_corr = np.fabs(self._corr[column].drop(column)).sort_values(ascending=False,
                                                                           inplace=False)
         top_corr = column_corr[(column_corr > threshold)][:top].index
-        correlations = self.corr[column][top_corr].to_dict()
+        correlations = self._corr[column][top_corr].to_dict()
         return ', '.join('{}: {}'.format(col, self._percent(val)) for col, val in correlations.items())
 
     def _get_numeric_summary(self, column, plot=True):
-        series = self.df[column]
+        series = self._df[column]
 
         if plot:
             try:
@@ -212,8 +235,8 @@ class DataFrameSummary(object):
         stats['sum'] = series.sum()
         stats['mad'] = series.mad()
         stats['cv'] = stats['std'] / stats['mean'] if stats['mean'] else np.nan
-        stats['zeros_num'] = self.length - np.count_nonzero(series)
-        stats['zeros_perc'] = self._percent(stats['zeros_num'] / self.length)
+        stats['zeros_num'] = self._length - np.count_nonzero(series)
+        stats['zeros_perc'] = self._percent(stats['zeros_num'] / self._length)
         deviation_of_mean, deviation_of_mean_perc = self._get_deviation_of_mean(
             series)
         stats['deviating_of_mean'] = deviation_of_mean
@@ -225,7 +248,7 @@ class DataFrameSummary(object):
         # stats['top_correlations'] = self._get_top_correlations(column)
         # todo: move line above to correlation report
         # fixme: we don't want top correlations because it messes up the table format.
-        return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
+        return pd.concat([pd.Series(stats, name=column), self._columns_stats.ix[:, column]])
 
     def _get_date_summary(self, column):
         """
@@ -233,12 +256,12 @@ class DataFrameSummary(object):
         :param column:
         :return:
         """
-        series = self.df[column]
+        series = self._df[column]
         #: added "freq" to show periods between dates
         stats = {'min': series.min(), 'max': series.max(),
                  'freq': pd.infer_freq(series)}
         stats['range'] = stats['max'] - stats['min']
-        return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
+        return pd.concat([pd.Series(stats, name=column), self._columns_stats.ix[:, column]])
 
     def _get_categorical_summary(self, column):
         """
@@ -246,7 +269,7 @@ class DataFrameSummary(object):
         :param column:
         :return:
         """
-        series = self.df[column]
+        series = self._df[column]
         #: adding "cats" for categories that were found
         cats = set(series)
         # Only run if at least 1 non-missing value
@@ -255,33 +278,33 @@ class DataFrameSummary(object):
             'top': '{}: {}'.format(value_counts.index[0], value_counts.iloc[0]),
             'cats': cats
         }
-        return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
+        return pd.concat([pd.Series(stats, name=column), self._columns_stats.ix[:, column]])
 
     def _get_constant_summary(self, column):
-        series = self.df[column]
+        series = self._df[column]
         value_counts = series.value_counts()
         stats = {
             'top': '{}: {}'.format(value_counts.index[0], value_counts.iloc[0]),
         }
-        # return 'This is a constant value: {}'.format(self.df[column][0])
-        return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
+        # return 'This is a constant value: {}'.format(self._df[column][0])
+        return pd.concat([pd.Series(stats, name=column), self._columns_stats.ix[:, column]])
 
     def _get_bool_summary(self, column):
-        series = self.df[column]
+        series = self._df[column]
 
         stats = {}
         for class_name, class_value in dict(series.value_counts()).items():
             stats['"{}" count'.format(class_name)] = '{}'.format(class_value)
             stats['"{}" perc'.format(class_name)] = '{}'.format(
-                self._percent(class_value / self.length))
+                self._percent(class_value / self._length))
 
-        return pd.concat([pd.Series(stats, name=column), self.columns_stats.ix[:, column]])
+        return pd.concat([pd.Series(stats, name=column), self._columns_stats.ix[:, column]])
 
     def _get_unique_summary(self, column):
-        return self.columns_stats.ix[:, column]
+        return self._columns_stats.ix[:, column]
 
     def _get_column_summary(self, column):
-        column_type = self.columns_stats.loc['types'][column]
+        column_type = self._columns_stats.loc['types'][column]
         if column_type == self.TYPE_NUMERIC:
             return self._get_numeric_summary(column)
         if column_type == self.TYPE_CATEGORICAL:
@@ -295,7 +318,7 @@ class DataFrameSummary(object):
         if column_type == self.TYPE_CONSTANT:
             return self._get_constant_summary(column)
 
-    def get_columns(self, df, usage, columns=None):
+    def _get_columns(self, df, usage, columns=None):
         """
         Returns a `data_frame.columns`.
         :param df: dataframe to select columns from
@@ -327,20 +350,6 @@ class DataFrameSummary(object):
         columns_included = columns_included.difference(columns_excluded)
         return columns_included.intersection(df.columns)
 
-    def _get_list_of_type(self, ps_type):
-        """
-        New method added by Alfonso R. Reyes.
-        Get a list of the columns of the specified type. Useful for grouping columns/
-        :param ps_type: str
-                the type of the column which has to be any of these:
-                TYPE_BOOL, TYPE_NUMERIC, TYPE_DATE, TYPE_CATEGORICAL, TYPE_CONSTANT, TYPE_UNIQUE
-        :return: list
-                a list of the columns of the type specified in ps_type
-        """
-        mask = self.columns_stats.loc['types'] == ps_type
-        select = self.columns_stats.loc["types", :][mask]
-        return select.index.tolist()
-
     def _is_all_numeric(self, columns):
         """
         New method added by Alfonso R. Reyes.
@@ -351,7 +360,7 @@ class DataFrameSummary(object):
         :return: bool
                 True if the columns provided are all numeric
         """
-        numeric = self._get_list_of_type(self.TYPE_NUMERIC)
+        numeric = self.columns_of_type(self.TYPE_NUMERIC)
         return set(columns).issubset(numeric)
 
     def _is_type_the_same(self, columns):
@@ -361,7 +370,7 @@ class DataFrameSummary(object):
         :param columns: list
         :return: boolean
         """
-        lot = len(set(self.columns_stats[columns].loc['types'].tolist()))
+        lot = len(set(self._columns_stats[columns].loc['types'].tolist()))
         return True if lot == 1 else False
 
     def _get_multicolumn_summary(self, columns):

@@ -4,7 +4,6 @@ import sys
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-
 class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
@@ -15,7 +14,6 @@ class PyTest(TestCommand):
         import pytest
         errcode = pytest.main(self.test_args)
         sys.exit(errcode)
-
 
 setup(name='pandas-overview',
       version='0.0.1',
