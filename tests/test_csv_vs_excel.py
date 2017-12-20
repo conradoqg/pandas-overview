@@ -61,12 +61,12 @@ class ExcelVsCSVTest(unittest.TestCase):
     def test_pandas_summary_on_excel_df(self):
         #: fixme: this returns error
         xdfs = DataFrameSummary(self.xdf)
-        print(xdfs.get_numeric_summary())
+        print(xdfs.type_summary('numeric'))
 
     def test_pandas_summary_on_csv_df(self):
         #: this works great!
         cdfs = DataFrameSummary(self.cdf)
-        print(cdfs.get_numeric_summary())
+        print(cdfs.type_summary('numeric'))
 
     def test_clean_column_on_excel(self):
         xdfs = DataFrameSummary(self.xdf)
@@ -78,10 +78,10 @@ class ExcelVsCSVTest(unittest.TestCase):
             # print(xdfs._clean_column(x))
             self.assertTrue(xdfs._clean_column(x))
 
-    def test_get_list_of_type(self):
+    def test_columns_of_type(self):
         xdfs = DataFrameSummary(self.xdf)
         the_type = "numeric"
-        columns = xdfs._get_list_of_type(the_type)
+        columns = xdfs.columns_of_type(the_type)
         print(columns)
         # xdfs.get_numeric_summary()
         cols = [x.encode('ascii') for x in columns]

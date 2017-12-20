@@ -49,12 +49,12 @@ class DataFrameSummaryTest(unittest.TestCase):
 
         self.dfs = DataFrameSummary(self.df)
 
-    def test_columns_stats(self):
+    def test__columns_stats(self):
         """
-        Test the columns_stats instance variable and the columns of the test dataframe.
+        Test the _columns_stats instance variable and the columns of the test dataframe.
         :return:
         """
-        columns_stats = self.dfs.columns_stats
+        columns_stats = self.dfs._columns_stats
         print(type(columns_stats))
         self.assertIsInstance(columns_stats, pd.core.frame.DataFrame)
         expected = ['dbool1', 'dbool2', 'dcategoricals1', 'dcategoricals2', 'dconstant', 'ddates1', 'ddates2',
@@ -98,24 +98,24 @@ class DataFrameSummaryTest(unittest.TestCase):
         print(result)
         self.assertTrue(result)
 
-    def test__get_list_of_type_numeric(self):
+    def test_columns_of_type_numeric(self):
         """
         Test that a list of numeric columns matches the test dataframe
         :return:
         """
         expected = ['dmissing', 'dnumerics1', 'dnumerics2', 'dnumerics3']
-        result = self.dfs._get_list_of_type("numeric")
+        result = self.dfs.columns_of_type("numeric")
         print(result)
         print(self.dfs[result])
         self.assertTrue(expected == result)
 
-    def test__get_list_of_type_numeric_generic(self):
+    def test_columns_of_type_numeric_generic(self):
         """
         Test that all the columns returning are all of the same `numeric` type
         :return:
         """
         the_type = "numeric"
-        columns = self.dfs._get_list_of_type(the_type)
+        columns = self.dfs.columns_of_type(the_type)
         frame = self.dfs[columns]
         print(frame)
         types = frame.ix['types']
@@ -124,24 +124,24 @@ class DataFrameSummaryTest(unittest.TestCase):
         print(result)
         self.assertTrue(result)
 
-    def test_get_numeric_summary(self):
+    def test_type_summary_numeric(self):
         """
         Test that the columns types reduce to a unique numeric value and matches.
         :return:
         """
-        frame = self.dfs.get_numeric_summary()
+        frame = self.dfs.type_summary('numeric')
         print(frame)
         result = self.dfs.TYPE_NUMERIC in set(frame.ix['types'])
         print(result)
         self.assertTrue(result)
 
-    def test__get_list_of_type_boolean(self):
+    def test_columns_of_type_boolean(self):
         """
         Test that boolean columns match the type `bool`
         :return:
         """
         expected = ['dbool1', 'dbool2']
-        result = self.dfs._get_list_of_type("bool")
+        result = self.dfs.columns_of_type("bool")
         print(result)
         self.assertTrue(expected == result)
 
@@ -152,13 +152,13 @@ class DataFrameSummaryTest(unittest.TestCase):
         """
         for column in self.types:
             print(column)
-            columns = self.dfs._get_list_of_type(column)
+            columns = self.dfs.columns_of_type(column)
             # print(self.dfs[columns])
             list_of = columns
             for col in list_of:
                 print(self.dfs[col])
 
-    def test__get_list_of_type_bool_generic(self):
+    def test_columns_of_type_bool_generic(self):
         """
         This is an OLD behavior. Now corrected.
         There is a problem when the list of columns specified is not numeric: what returns when
@@ -166,7 +166,7 @@ class DataFrameSummaryTest(unittest.TestCase):
         No what we are looking for.
         """
         the_type = "bool"
-        columns = self.dfs._get_list_of_type(the_type)
+        columns = self.dfs.columns_of_type(the_type)
         print(columns)
         df = self.dfs[['dbool1', 'dbool2']]
         print(df)

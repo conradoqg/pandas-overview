@@ -1,13 +1,10 @@
 import math
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-from IPython.display import display, HTML, Markdown
-
-
 class DataFrameOverview:
     def overview(dfs, first_level = 1):
+        from IPython.display import display, HTML, Markdown
         markdown_level = "#" * first_level
 
         # Remove column limitation, it's necessary to get a real overview of the data
@@ -36,6 +33,7 @@ class DataFrameOverview:
             display(corr.style.background_gradient(cmap=plt.get_cmap('coolwarm'), axis=1).set_properties(
                 **{'max-width': '80px', 'font-size': '10pt'}).set_precision(2))
         if dfs.columns_of_type("numeric"):
+            import matplotlib.pyplot as plt
             display(Markdown(markdown_level + "# Histogram for numeric columns"))
             dfs._df[dfs.columns_of_type("numeric")].hist(
                 bins='auto', figsize=(20, 15))

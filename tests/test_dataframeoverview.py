@@ -56,7 +56,7 @@ class DataFrameSummaryTest(unittest.TestCase):
         assert_series_equal(self.dfs.columns_types[self.types], expected[self.types])
 
     def test_column_stats_works_as_expected(self):
-        column_stats = self.dfs.columns_stats
+        column_stats = self.dfs._columns_stats
         self.assertTupleEqual(column_stats.shape, (5, 10))
 
         # counts

@@ -111,6 +111,38 @@ class DataFrameSummary(object):
         select = self._columns_stats.loc["types", :][mask]
         return select.index.tolist()
 
+    def get_columns(self, df, usage, columns=None): 
+        """ 
+        Returns a `data_frame.columns`. 
+        :param df: dataframe to select columns from 
+        :param usage: should be a value from [ALL, INCLUDE, EXCLUDE]. 
+                            this value only makes sense if attr `columns` is also set. 
+                            otherwise, should be used with default value ALL. 
+        :param columns: * if `usage` is all or ALL, this value is not used. 
+                        * if `usage` is INCLUDE, the `df` is restricted to the intersection 
+                          between `columns` and the `df.columns` 
+                        * if usage is EXCLUDE, returns the `df.columns` excluding these `columns` 
+        :return: `data_frame` columns, excluding `target_column` and `id_column` if given. 
+                 `data_frame` columns, including/excluding the `columns` depending on `usage`. 
+        """ 
+        columns_excluded = pd.Index([]) 
+        columns_included = df.columns 
+ 
+        if usage == self.INCLUDE: 
+            try: 
+                columns_included = columns_included.intersection( 
+                    pd.Index(columns)) 
+            except TypeError: 
+                pass 
+        elif usage == self.EXCLUDE: 
+            try: 
+                columns_excluded = columns_excluded.union(pd.Index(columns)) 
+            except TypeError: 
+                pass 
+ 
+        columns_included = columns_included.difference(columns_excluded) 
+        return columns_included.intersection(df.columns) 
+
     @staticmethod
     def _number_format(x):
         eps = 0.000000001
